@@ -1,86 +1,79 @@
 const { Telegraf } = require("telegraf")
 const whatsapp = require("wa-multi-session")
-const whitelist = require("./data/whatsapp.json")
 const fs = require("fs")
 
-let logfile = "./data/log.json"
-let logs = require(logfile)
+let logsFile = "./logs/logsWhatsapp.json"
+let groups = require("./data/whatsapp.json")
+let logs = require(logsFile)
 
-let allgroup = {}
-let group = { opank: "-1001962626950", oyen: "-1001909548840" }
-let process = { logs: 20, count: 0, blacklistSend: true }
+let bot = [
+  { name: "Temmy ", token: "6612064106:AAGmoEXZGq6p0GgPLl8jUg5sF0xHSo8frbo" },
+  { name: "Fang Fang", token: "6892133845:AAFLimtSlQ5iLnesvBk4qP_-YE5nwk_hH3Y" },
+  { name: "Tn. In In", token: "6031592748:AAGscrN5FeJ8M1c6e-kCi-8emmjINF6jKXM" },
+  { name: "Meyhang", token: "6565780808:AAFlxbwz3nMC3DY9nneVLZKT4nREPJQShJw" },
+  { name: "Jenny", token: "6485261723:AAEmfkGPtZFtUBoPiWxc-TvM_SkHCgwNzxM" },
+  { name: "Choco", token: "6443955175:AAGvudm3uzVnxzHAEdEHfCAQRiVOxthLz1A" },
+  { name: "Clara", token: "6544279962:AAER02Wpn8aM0M-Tf51QLf6tuGn5Er0Zzn4" },
+  { name: "Yoko", token: "6691155059:AAFWi4m1K__yU2NPIif7P7Nub6JrA3UL2wI" },
+  { name: "Shiro", token: "6886385156:AAFXXiIVSjY4CNt40X5XcCeKIvDPWMls2hA" },
+]
+let config = { count: 0, logs: 100, botIndex: 0, bot: { Temmy: new Telegraf(bot[0].token) }, oyen: "-1001909548840", opank: "-1001962626950" }
 
-let bot = {
-  amon: "6330855133:AAEhvPiovs-QJ8mMyACHdam0j76J76fk-W0",
-  kumang: "6659028719:AAFW_J7nr_KDHhC4QZfAmbM1Ozirg5P3QXs",
-  yuli: "6694843798:AAEHQChaaGX1HyK3kZUXnaLoweK6yVcm394",
-  opank: "6516245543:AAEPXLHDut-6tyRQNIj7cqxqVVdoGfet1Es",
-  oyen: "6293865566:AAGZQgNcYU3HmnmYw3V-B2DkWu7z_-WmGxo",
-}
-
-const kumang = new Telegraf(bot.kumang)
-
-function timestamp(x) {
-  const date = new Date(x)
-
-  const daysOfWeek = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"]
-  const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
-
-  const day = daysOfWeek[date.getDay()]
-  const dayOfMonth = date.getDate()
-  const month = months[date.getMonth()]
-  const year = date.getFullYear()
-
-  const time = date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })
-
-  const formattedText = `${time} | ${day}, ${dayOfMonth} ${month} ${year}`
-  return formattedText
-}
-
-const telegram = async (data, botgroup, status) => {
+bot.forEach(async (x) => {
   try {
-    if (status || status === "custom") {
-      await kumang.telegram.sendMessage(botgroup, data)
-    } else {
-      await kumang.telegram.sendMessage(
-        botgroup,
-        `${data.chat}\n\n📌 process ${process.count}\n🕹️ ${data.groupname.toLowerCase().trim()}\n🙇‍♂️ ${data.name.toLowerCase().trim()}`,
-        {
-          disable_web_page_preview: true,
-          reply_markup: {
-            inline_keyboard: [[{ text: data?.group?.toUpperCase(), callback_data: "late" }]],
-          },
-        }
-      )
-    }
+    config.bot[x.name] = new Telegraf(x.token)
+    await config.bot[x.name].launch()
+  } catch (error) {
+    console.log({ error, msg: "ERROR ON FOREACH BOT" + x.name })
+  }
+})
+
+const oyen = async (data, text) => {
+  try {
+    await config.bot[bot[config.botIndex].name].telegram.sendMessage(config.oyen, text, {
+      disable_web_page_preview: true,
+      reply_markup: {
+        inline_keyboard: [[{ text: data?.group?.toUpperCase(), callback_data: "late" }]],
+      },
+    })
+
+    config.botIndex >= bot.length - 1 ? (config.botIndex = 0) : config.botIndex++
+  } catch (error) {
+    config.botIndex >= bot.length - 1 ? (config.botIndex = 0) : config.botIndex++
+    console.log({ error, msg: "ERROR ON FUNCTION TELEGRAM" })
+  }
+}
+
+const opank = async (data, text) => {
+  try {
+    await config.bot[bot[config.botIndex].name].telegram.sendMessage(config.opank, text, {
+      disable_web_page_preview: true,
+      reply_markup: {
+        inline_keyboard: [[{ text: data?.group?.toUpperCase(), callback_data: "late" }]],
+      },
+    })
   } catch (error) {
     console.log({ error, msg: "ERROR ON FUNCTION TELEGRAM" })
   }
 }
 
-const sendMsg = async (data) => {
+const msgChecker = async (data) => {
   try {
-    await kumang.telegram.sendChatAction(group.opank, "typing")
+    let text = `${data.chat}\n\n🐱 PROCESS ${process.count}\n😻 ${data.groupname.toLowerCase().trim()}\n😹 ${data.name}`
 
-    if (logs.length > process.logs) logs = []
+    if (logs.length > config.logs) logs = []
+    if (logs.find((x) => x.chat === data.chat)) return { msg: "DUPLICATE" }
 
-    if (group[data.from] && !logs.find((x) => x.chat === data.chat)) {
-      await telegram(data, group.opank)
-      data.status = true
-
-      logs.push(data)
-      fs.writeFileSync(logfile, JSON.stringify(logs, null, 2))
+    if (config.group[data.from]) {
+      opank(data, text)
     } else {
-      if (process.blacklistSend) {
-        await telegram(data, group.oyen)
-        data.status = true
-        data.info = "OYENNNN"
-
-        logs.push(data)
-        fs.writeFileSync(logfile, JSON.stringify(logs, null, 2))
-      }
+      oyen(data, text)
+      text = `Chummm ada pesan di list blacklist, buruan cek !!!!\n\n${data.name}\n${data.groupname.toUpperCase().trim()}\n😹😻🐱🙀😺`
+      opank(data, text)
     }
 
+    logs.push(data)
+    fs.writeFileSync(logsFile, JSON.stringify(logs, null, 2))
     console.log(data)
   } catch (error) {
     console.log({ error, msg: "ERROR ON FUNCTION SENDMSG" })
@@ -89,76 +82,64 @@ const sendMsg = async (data) => {
 
 const main = async () => {
   try {
-    console.log("# Start")
-
     const session = await whatsapp.startSession("mysessionid")
 
-    for (x of whitelist) {
-      if (!x.blacklist) {
-        group[x.from] = x.name
-      }
-    }
+    groups.forEach((x) => {
+      if (!config.allGroup) config.allGroup = {}
+      if (!config.group) config.group = {}
+      if (!x.blacklist) config.group[x.from] = x.name
 
-    for (x of whitelist) {
-      allgroup[x.from] = x.name
-    }
-
-    whatsapp.onConnected(async (sessionId) => {
-      console.log("# Connected")
-      telegram(`# START SERVICES\n    ${timestamp(new Date())}\n\n# SEND BLACKLIST: ${process.blacklistSend}`, group.oyen, "custom")
+      config.allGroup[x.from] = x.name
     })
+
+    whatsapp.onConnected(async (sessionId) => console.log("# Connected\n\n"))
 
     whatsapp.onMessageReceived(async (msg) => {
       const data = {
-        process: process.count,
-        name: msg?.pushName,
+        process: config.count,
+        isMe: msg?.key?.fromMe || false,
+        name: msg?.pushName?.toUpperCase().trim(),
         from: msg?.key?.remoteJid,
         participant: msg?.key?.participant,
         chat: msg?.message?.extendedTextMessage?.text || msg?.message?.conversation,
         sessionId: msg.sessionId,
-        groupname: allgroup[msg?.key?.remoteJid] || "UNKNOWN GROUP, PERSONAL OR STORY",
-        group: group[msg?.key?.remoteJid] || "BLACKLIST",
-        timestamp: timestamp(new Date()),
+        groupname: config?.allGroup[msg?.key?.remoteJid]?.toUpperCase().trim() || "UNKNOWN GROUP, PERSONAL OR STORY",
+        group: config?.group[msg?.key?.remoteJid] || "BLACKLIST",
       }
 
-      if (
+      const daget =
         data?.chat?.toLowerCase().includes("dana.id") ||
         data?.chat?.toLowerCase().includes("danaindonesia") ||
         data?.chat?.toLowerCase().includes("dana.id") ||
         data?.chat?.toLowerCase().includes("shope.ee") ||
         data?.chat?.toLowerCase().includes("sppay")
-      ) {
-        await sendMsg(data)
-      }
 
-      process.count++
+      const minta = data?.chat?.toLocaleLowerCase().includes("dana.id/qr") || data?.chat?.toLocaleLowerCase().includes("dana.id/minta")
+
+      if (daget && !minta && !data.isMe) msgChecker(data)
+
+      config.count++
     })
   } catch (error) {
     console.log({ error, msg: "# ERROR ON MAIN PROCESS" })
   }
 }
 
-kumang.command("kumang", async (ctx) => {
+config.bot.Temmy.command("wa", async (ctx) => {
   try {
-    await ctx.reply("JJ SIAPP !!!", {
+    await config.bot[bot[config.botIndex].name].telegram.sendMessage(config.oyen, bot[config.botIndex].name.toUpperCase() + " SIAPP !!!", {
+      disable_web_page_preview: true,
       reply_markup: {
-        inline_keyboard: [[{ text: `SEBANYAK ${process.count} PESAN SUDAH JJ PANTAU`, callback_data: "late" }]],
+        inline_keyboard: [
+          [{ text: `SEBANYAK ${config.count} PESAN SUDAH ${bot[config.botIndex].name.toUpperCase()} PANTAU`, callback_data: "late" }],
+        ],
       },
     })
+    config.botIndex >= bot.length - 1 ? (config.botIndex = 0) : config.botIndex++
   } catch (error) {
+    config.botIndex >= bot.length - 1 ? (config.botIndex = 0) : config.botIndex++
     console.log({ error, msg: "ERROR ON PROCESS COMMAND KUMANG" })
   }
 })
-
-kumang.command("blacklist", async (ctx) => {
-  try {
-    process.blacklistSend ? (process.blacklistSend = false) : (process.blacklistSend = true)
-    await ctx.reply(`# SEND BLACKLIST: ${process.blacklistSend}`)
-  } catch (error) {
-    console.log({ error, msg: "ERROR ON PROCESS COMMAND KUMANG" })
-  }
-})
-
-kumang.launch()
 
 main()
