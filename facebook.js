@@ -82,7 +82,7 @@ const msgChecker = async (group, msg) => {
     config.botIndex >= bot.length - 1 ? (config.botIndex = 0) : config.botIndex++
 
     console.log({
-      error: error,
+      error: error || "UNKNOWN ERRORS",
       msg: "ERROR ON PROCESS MSG CHECKER, BOT " + bot[config.botIndex].name + ", TOKEN " + token[group.tokenIndex].name,
     })
   }
@@ -115,7 +115,7 @@ const facebook = async (group) => {
     facebook(group)
   } catch (error) {
     console.log({
-      error: error.response.data.error.message || "UNKNOWN ERROR",
+      error,
       msg: "ERROR ON PROCESS FACEBOOK, GROUP " + group.name + ", BOT " + bot[config.botIndex].name + ", TOKEN " + token[group.tokenIndex].name,
     })
     group.tokenIndex >= token.length - 1 ? (group.tokenIndex = 0) : group.tokenIndex++
@@ -145,4 +145,4 @@ romyBot.command("test", async (ctx) => {
 
 romyBot.launch()
 
-groups.forEach((x, index) => facebook(x))
+groups.forEach((x) => facebook(x))
