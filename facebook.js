@@ -16,7 +16,6 @@ const bot = [
   { name: "Kumang", token: "6659028719:AAFW_J7nr_KDHhC4QZfAmbM1Ozirg5P3QXs" },
   { name: "Moncil", token: "6429928140:AAFmPqqikcaNNPCNG3KpuL8VAxgsB_UG_sA" },
   { name: "Gembul", token: "6429373393:AAESNtqq5Od4gr8ZBTA000zJGjaVLi-k6MI" },
-  { name: "Romy", token: "6559515080:AAEcfv2LSTREpLX8cP2KCtWm3pKsNIgN5pQ" },
 ]
 
 const config = {
@@ -28,7 +27,7 @@ const config = {
   process: 0,
   opank: "-1001962626950",
   oyen: "-1001909548840",
-  bot: { Oyen: new Telegraf(bot[2].token) },
+  bot: { Oyen: new Telegraf("6293865566:AAGZQgNcYU3HmnmYw3V-B2DkWu7z_-WmGxo") },
 }
 
 bot.forEach(async (x) => {
@@ -58,7 +57,7 @@ const msgChecker = async (group, msg) => {
 
       if (!check) {
         group.found++
-        const text = `😺 PROCESS ${group.process}, FOUND: ${group.found}\n\n${danalink}`
+        const text = `😻 PROCESS ${group.process}, FOUND: ${group.found}, TOTAL ${config.process}\n\n${danalink}`
         await config.bot[bot[config.botIndex].name].telegram.sendMessage(config.opank, text, {
           disable_web_page_preview: true,
           reply_markup: {
@@ -124,13 +123,16 @@ const facebook = async (group) => {
   }
 }
 
-config.bot.Oyen.command("fb", async (ctx) => {
+const romy = { name: "Romy", token: "6559515080:AAEcfv2LSTREpLX8cP2KCtWm3pKsNIgN5pQ" }
+const romyBot = new Telegraf(romy.token)
+
+romyBot.command("test", async (ctx) => {
   try {
-    await config.bot[bot[config.botIndex].name].telegram.sendMessage(config.opank, bot[config.botIndex].name.toUpperCase() + " SIAPP !!!", {
+    await ctx.reply(bot[config.botIndex].name.toUpperCase() + " SIAPP !!!", {
       disable_web_page_preview: true,
       reply_markup: {
         inline_keyboard: [
-          [{ text: `SEBANYAK ${config.count} PESAN SUDAH ${bot[config.botIndex].name.toUpperCase()} PANTAU`, callback_data: "late" }],
+          [{ text: `SEBANYAK ${config.process} PESAN SUDAH ${bot[config.botIndex].name.toUpperCase()} PANTAU`, callback_data: "late" }],
         ],
       },
     })
@@ -140,5 +142,7 @@ config.bot.Oyen.command("fb", async (ctx) => {
     console.log({ error, msg: "ERROR ON PROCESS COMMAND KUMANG" })
   }
 })
+
+romyBot.launch()
 
 groups.forEach((x, index) => facebook(x))
